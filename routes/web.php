@@ -57,8 +57,10 @@ Route::group(['prefix' => 'admin/xero', 'middleware' => ['auth', 'XeroAuthentica
     Route::get('contacts/{contactId}/edit', App\Livewire\Admin\Xero\Contacts\EditContact::class)->name('xero.contacts.edit');
     Route::get('contacts/{contactId}', App\Livewire\Admin\Xero\Contacts\ShowContact::class)->name('xero.contacts.show');
 
-    // Route::get('invoices', App\Livewire\Admin\Xero\Invoices\Invoices::class)->name('xero.invoices.index');
-    // Route::get('invoices/{invoiceId}', App\Livewire\Admin\Xero\Invoices\ShowInvoice::class)->name('xero.invoices.show');
+    Route::get('invoices', App\Livewire\Admin\Xero\Invoices\Invoices::class)->name('xero.invoices.index');
+    Route::get('invoices/create', App\Livewire\Admin\Xero\Invoices\CreateInvoice::class)->name('xero.invoices.create');
+    Route::get('invoices/{invoiceId}/edit', App\Livewire\Admin\Xero\Invoices\EditInvoice::class)->name('xero.invoices.edit');
+    Route::get('invoices/{invoiceId}', App\Livewire\Admin\Xero\Invoices\ShowInvoice::class)->name('xero.invoices.show');
 
     Route::get('disconnect', function () {
         Xero::disconnect();

@@ -5,6 +5,7 @@
 
 <x-nav.divider>{{ __('Xero') }}</x-nav.divider>
 <x-nav.link route="xero.contacts.index" icon="users">{{ __('Contacts') }}</x-nav.link>
+<x-nav.link route="xero.invoices.index" icon="book-open">{{ __('Invoices') }}</x-nav.link>
 
 @if(can('view_system_settings') || can('view_roles') || can('view_audit_trails'))
     <x-nav.divider>{{ __('Settings') }}</x-nav.divider>
