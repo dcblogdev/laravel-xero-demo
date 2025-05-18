@@ -46,7 +46,7 @@
                     {{ __('Email and Account Number are recommended for identifying existing contacts.') }}
                 </p>
 
-                <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                <div class="mb-4 p-4 bg-blue-50 dark:bg-gray-700 border border-blue-200 rounded text-sm text-blue-700">
                     <p class="font-semibold">{{ __('Note:') }}</p>
                     <p>{{ __('If a contact with the same Name, Email, or Account Number already exists in Xero, it will be updated instead of creating a duplicate.') }}</p>
                 </div>
