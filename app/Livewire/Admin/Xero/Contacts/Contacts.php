@@ -18,9 +18,9 @@ class Contacts extends Component
 
     public string $contactId = '';
 
-    public string $searchTerm = 'Eleven';
+    public string $searchTerm = '';
 
-    public bool $includeArchived = true;
+    public bool $includeArchived = false;
 
     public bool $openFilter = false;
 
@@ -32,16 +32,16 @@ class Contacts extends Component
     /** @return array<int, string> */
     public function contacts(): array
     {
-        // $contacts = Xero::contacts()
-        // ->filter('page', 1)
-        // ->filter('where', 'AccountNumber=="info@abfl.com"')
-        // ->filter('where', 'EmailAddress=="info@abfl.com"')
-        // ->filter('where', 'ContactID==Guid("74ea95ea-6e1e-435d-9c30-0dff8ae1bd80")')
-        // ->filter('searchTerm', 'info')
-        // ->filter('includeArchived', 'false')
-        // ->filter('order', 'name')
-        // ->filter('summaryOnly', 'true')
-        // ->get();
+        /*$contacts = Xero::contacts()
+        ->filter('page', 1)
+        ->filter('where', 'AccountNumber=="info@abfl.com"')
+        ->filter('where', 'EmailAddress=="info@abfl.com"')
+        ->filter('where', 'ContactID==Guid("74ea95ea-6e1e-435d-9c30-0dff8ae1bd80")')
+        ->filter('searchTerm', 'info')
+        ->filter('includeArchived', 'false')
+        ->filter('order', 'name')
+        ->filter('summaryOnly', 'true')
+        ->get();*/
 
         $query = Xero::contacts();
 
@@ -61,17 +61,14 @@ class Contacts extends Component
             $query->filter('searchTerm', $this->searchTerm);
         }
 
-        if ($this->includeArchived === false) {
-            $query->filter('includeArchived', 'false');
+        if ($this->includeArchived) {
+            $query->filter('includeArchived', $this->includeArchived);
         }
 
-        $query->filter('page', 1)
-            ->filter('order', 'name')
-            ->filter('summaryOnly', 'true');
+        $query
+            ->filter('order', 'name');
 
-        $contacts = $query->get();
-
-        return $contacts;
+        return $query->get();
     }
 
     public function resetFilters(): void

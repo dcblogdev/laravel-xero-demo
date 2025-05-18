@@ -6,9 +6,7 @@
     </div>
 
     @if (! \Dcblogdev\Xero\Facades\Xero::isConnected())
-        <p>Not connected</p>
-    @else
-        <p>Connected</p>
+        <p>You are not connect to Xero, please <a href="{{ route('xero.connect') }}" variant="primary">connect</a></p>
     @endif
 
 </div>

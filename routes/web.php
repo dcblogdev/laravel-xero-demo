@@ -50,11 +50,12 @@ Route::prefix('admin')->middleware(['auth', 'verified', 'activeUser', 'ipCheckMi
 });
 
 Route::group(['prefix' => 'admin/xero', 'middleware' => ['auth', 'XeroAuthenticated']], function () {
+    Route::get('/', App\Livewire\Admin\Xero\XeroDashboard::class)->name('xero.index');
     Route::get('contacts', App\Livewire\Admin\Xero\Contacts\Contacts::class)->name('xero.contacts.index');
     Route::get('contacts/{contactId}', App\Livewire\Admin\Xero\Contacts\ShowContact::class)->name('xero.contacts.show');
 
-    //Route::get('invoices', App\Livewire\Admin\Xero\Invoices\Invoices::class)->name('xero.invoices.index');
-    //Route::get('invoices/{invoiceId}', App\Livewire\Admin\Xero\Invoices\ShowInvoice::class)->name('xero.invoices.show');
+    // Route::get('invoices', App\Livewire\Admin\Xero\Invoices\Invoices::class)->name('xero.invoices.index');
+    // Route::get('invoices/{invoiceId}', App\Livewire\Admin\Xero\Invoices\ShowInvoice::class)->name('xero.invoices.show');
 
     Route::get('disconnect', function () {
         Xero::disconnect();
@@ -64,20 +65,20 @@ Route::group(['prefix' => 'admin/xero', 'middleware' => ['auth', 'XeroAuthentica
         return redirect('/');
     });
 
-//    Route::get('invoices', function () {
-//
-//        return Xero::invoices()
-//            ->filter('searchTerm', 'RPT445-1')
-//            ->get();
-//    });
-//
-//    Route::get('invoices/{id}', function ($id) {
-//        return Xero::invoices()->find($id);
-//    });
+    //    Route::get('invoices', function () {
+    //
+    //        return Xero::invoices()
+    //            ->filter('searchTerm', 'RPT445-1')
+    //            ->get();
+    //    });
+    //
+    //    Route::get('invoices/{id}', function ($id) {
+    //        return Xero::invoices()->find($id);
+    //    });
 });
 
 Route::get('xero/connect', function () {
     return Xero::connect();
-});
+})->name('xero.connect');
 
 require __DIR__.'/auth.php';
