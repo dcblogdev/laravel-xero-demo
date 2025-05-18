@@ -25,6 +25,9 @@ class Contacts extends Component
 
     public bool $openFilter = false;
 
+    /** @var array<string, bool> */
+    public array $selectedContacts = [];
+
     public function render(): View
     {
         return view('livewire.admin.xero.contacts.index');
@@ -77,10 +80,48 @@ class Contacts extends Component
         $this->reset();
     }
 
+    public function selectAllContacts(bool $checked): void
+    {
+        $contacts = $this->contacts();
+
+        if ($checked) {
+            // Select all contacts
+            foreach ($contacts as $contact) {
+                $this->selectedContacts[$contact['ContactID']] = true;
+            }
+        } else {
+            // Deselect all contacts
+            foreach ($contacts as $contact) {
+                $this->selectedContacts[$contact['ContactID']] = false;
+            }
+        }
+    }
+
     public function exportToCsv()
     {
         try {
-            $contacts = $this->contacts();
+            $allContacts = $this->contacts();
+
+            // Check if any contacts are selected
+            $hasSelectedContacts = count(array_filter($this->selectedContacts)) > 0;
+
+            // If contacts are selected, filter the contacts array to only include selected ones
+            $contacts = $allContacts;
+            if ($hasSelectedContacts) {
+                $contacts = array_filter($allContacts, function($contact) {
+                    return isset($this->selectedContacts[$contact['ContactID']]) && $this->selectedContacts[$contact['ContactID']];
+                });
+            }
+
+            // If no contacts are left after filtering (which shouldn't happen), use all contacts
+            if (empty($contacts)) {
+                $contacts = $allContacts;
+                session()->flash('message', 'No contacts were selected. Exporting all contacts.');
+            } else if ($hasSelectedContacts) {
+                session()->flash('message', count($contacts) . ' selected contacts exported successfully!');
+            } else {
+                session()->flash('message', 'All contacts exported successfully!');
+            }
 
             // Define CSV headers
             $headers = [

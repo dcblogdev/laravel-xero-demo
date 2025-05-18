@@ -2,9 +2,13 @@
     <div class="flex items-center justify-between mb-4">
         <h1 class="text-xl font-semibold">{{ __('Contacts') }}</h1>
 
-        <div class="flex space-x-2">
+        <div class="flex space-x-2" x-data="{
+            get selectedCount() {
+                return Object.values($wire.selectedContacts).filter(value => value === true).length;
+            }
+        }">
             <x-button wire:click="exportToCsv">
-                {{ __('Export to CSV') }}
+                <span x-text="selectedCount > 0 ? `{{ __('Export') }} (${selectedCount}) {{ __('to CSV') }}` : `{{ __('Export to CSV') }}`"></span>
             </x-button>
 
             <x-a href="{{ route('xero.contacts.create') }}" class="inline-flex items-center font-medium ease-in-out disabled:opacity-50 disabled:cursor-not-allowed rounded-md cursor-pointer bg-primary text-white hover:bg-primary/90 shadow-md dark:bg-primary-dark dark:text-gray-200 dark:hover:bg-primary-dark/80 px-2 py-1 text-sm">
@@ -81,6 +85,11 @@
             <table>
                 <thead>
                 <tr>
+                    <th class="w-10">
+                        <input type="checkbox" id="select-all" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                               wire:click="selectAllContacts($event.target.checked)"
+                               onclick="toggleAllCheckboxes(this.checked)">
+                    </th>
                     <th>{{ __('Name') }}</th>
                     <th>{{ __('First Name') }}</th>
                     <th>{{ __('Last Name') }}</th>
@@ -92,6 +101,12 @@
                 <tbody>
                 @foreach($this->contacts() as $row)
                     <tr wire:key="{{ $row['ContactID'] }}">
+                        <td>
+                            <input type="checkbox"
+                                   wire:model.live="selectedContacts.{{ $row['ContactID'] }}"
+                                   id="contact-{{ $row['ContactID'] }}"
+                                   class="contact-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </td>
                         <td>{{ $row['Name'] }}</td>
                         <td>{{ $row['FirstName'] ?? '' }}</td>
                         <td>{{ $row['LastName'] ?? '' }}</td>
@@ -108,4 +123,44 @@
         </div>
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners to all contact checkboxes
+            const checkboxes = document.querySelectorAll('.contact-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectAllCheckbox);
+            });
+
+            // Initial update of select-all checkbox
+            updateSelectAllCheckbox();
+        });
+
+        function toggleAllCheckboxes(checked) {
+            // Update UI and trigger Livewire updates for each checkbox
+            const checkboxes = document.querySelectorAll('.contact-checkbox');
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked !== checked) {
+                    checkbox.checked = checked;
+                    // Trigger Livewire update for this checkbox
+                    checkbox.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+        }
+
+        function updateSelectAllCheckbox() {
+            const checkboxes = document.querySelectorAll('.contact-checkbox');
+            const selectAllCheckbox = document.getElementById('select-all');
+
+            // If no checkboxes, do nothing
+            if (checkboxes.length === 0) return;
+
+            // Check if all checkboxes are checked
+            const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+            const anyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+
+            // Update select-all checkbox without triggering its change event
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+        }
+    </script>
 </div>
