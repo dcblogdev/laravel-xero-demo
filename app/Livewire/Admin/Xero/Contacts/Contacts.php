@@ -7,8 +7,10 @@ namespace App\Livewire\Admin\Xero\Contacts;
 use Dcblogdev\Xero\Facades\Xero;
 use Exception;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Response;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 #[Title('Contacts')]
@@ -29,25 +31,46 @@ class Contacts extends Component
     /** @var array<string, bool> */
     public array $selectedContacts = [];
 
+    /**
+     * The status of the most recent import job
+     *
+     * @var array<string, mixed>|null
+     */
+    public ?array $importStatus = null;
+
+    public function mount(): void
+    {
+        // Check if there's an import job in progress
+        $this->checkImportStatus();
+    }
+
     public function render(): View
     {
         return view('livewire.admin.xero.contacts.index');
     }
 
+    /**
+     * Check the status of the most recent import job
+     */
+    public function checkImportStatus(): void
+    {
+        $jobId = session('xero_import_job_id');
+
+        if ($jobId) {
+            $this->importStatus = Cache::get('xero_import_' . $jobId);
+
+            // If the job is completed or failed, we can remove the job ID from the session
+            if ($this->importStatus && in_array($this->importStatus['status'], ['completed', 'failed', 'completed_with_errors'])) {
+                // Keep the status in the session for this request, but clear it for future requests
+                // This ensures the user sees the completion message once
+                session()->forget('xero_import_job_id');
+            }
+        }
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function contacts(): array
     {
-        /*$contacts = Xero::contacts()
-        ->filter('page', 1)
-        ->filter('where', 'AccountNumber=="info@abfl.com"')
-        ->filter('where', 'EmailAddress=="info@abfl.com"')
-        ->filter('where', 'ContactID==Guid("74ea95ea-6e1e-435d-9c30-0dff8ae1bd80")')
-        ->filter('searchTerm', 'info')
-        ->filter('includeArchived', 'false')
-        ->filter('order', 'name')
-        ->filter('summaryOnly', 'true')
-        ->get();*/
-
         $query = Xero::contacts();
 
         if ($this->accountNumber) {
@@ -70,10 +93,9 @@ class Contacts extends Component
             $query->filter('includeArchived', $this->includeArchived);
         }
 
-        $query
-            ->filter('order', 'name');
+        $query->filter('order', 'name');
 
-        return $query->get();
+        return $query->get() ?? [];
     }
 
     public function resetFilters(): void

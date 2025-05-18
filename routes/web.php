@@ -53,6 +53,7 @@ Route::group(['prefix' => 'admin/xero', 'middleware' => ['auth', 'XeroAuthentica
     Route::get('/', App\Livewire\Admin\Xero\XeroDashboard::class)->name('xero.index');
     Route::get('contacts', App\Livewire\Admin\Xero\Contacts\Contacts::class)->name('xero.contacts.index');
     Route::get('contacts/create', App\Livewire\Admin\Xero\Contacts\CreateContact::class)->name('xero.contacts.create');
+    Route::get('contacts/import', App\Livewire\Admin\Xero\Contacts\ImportContacts::class)->name('xero.contacts.import');
     Route::get('contacts/{contactId}/edit', App\Livewire\Admin\Xero\Contacts\EditContact::class)->name('xero.contacts.edit');
     Route::get('contacts/{contactId}', App\Livewire\Admin\Xero\Contacts\ShowContact::class)->name('xero.contacts.show');
 
