@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin\Xero\Contacts;
 
+use App\DTOs\Xero\ContactDTO;
 use Dcblogdev\Xero\Facades\Xero;
 use Exception;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Response;
 use Livewire\Attributes\Title;
-use Livewire\Attributes\On;
 use Livewire\Component;
 
 #[Title('Contacts')]
@@ -57,7 +57,7 @@ class Contacts extends Component
         $jobId = session('xero_import_job_id');
 
         if ($jobId) {
-            $this->importStatus = Cache::get('xero_import_' . $jobId);
+            $this->importStatus = Cache::get('xero_import_'.$jobId);
 
             // If the job is completed or failed, we can remove the job ID from the session
             if ($this->importStatus && in_array($this->importStatus['status'], ['completed', 'failed', 'completed_with_errors'])) {
@@ -95,36 +95,12 @@ class Contacts extends Component
 
         $query->filter('order', 'name');
 
-        return $query->get() ?? [];
+        return $query->get();
     }
 
     public function resetFilters(): void
     {
         $this->reset();
-    }
-
-    /**
-     * Format a Xero date string to a readable date
-     *
-     * @param string $xeroDate The date string from Xero API
-     * @return string Formatted date string
-     */
-    private function formatXeroDate(string $xeroDate): string
-    {
-        $pattern = '/\/Date\((\d+)\+\d+\)\//';
-        $replacement = '@$1';
-        $dateStr = preg_replace($pattern, $replacement, $xeroDate);
-
-        if ($dateStr === null) {
-            return '';
-        }
-
-        $timestamp = strtotime($dateStr);
-        if ($timestamp === false) {
-            return '';
-        }
-
-        return date('Y-m-d H:i:s', $timestamp);
     }
 
     public function selectAllContacts(bool $checked): void
@@ -145,11 +121,129 @@ class Contacts extends Component
     }
 
     /**
-     * Export contacts to a CSV file
+     * Archive a contact by setting its status to ARCHIVED
      *
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|null
+     * @param  string  $contactId  The ID of the contact to archive
      */
-    public function exportToCsv()
+    public function archiveContact(string $contactId): void
+    {
+        try {
+            // First, get the contact to check its current status
+            $contact = Xero::contacts()->find($contactId);
+
+            // Check if the contact is already archived
+            if ($contact['ContactStatus'] === 'ARCHIVED') {
+                session()->flash('message', 'Contact is already archived.');
+
+                return;
+            }
+
+            // Create a DTO with just the status field set to ARCHIVED
+            $contactDTO = new ContactDTO(
+                contactStatus: 'ARCHIVED'
+            );
+
+            // Update the contact in Xero
+            $response = Xero::contacts()->update($contactId, $contactDTO->toArray());
+
+            if (isset($response['Id']) || isset($response['ContactID'])) {
+                session()->flash('message', 'Contact archived successfully!');
+
+                // Remove the contact from the selected contacts array if it was selected
+                if (isset($this->selectedContacts[$contactId])) {
+                    unset($this->selectedContacts[$contactId]);
+                }
+            } else {
+                session()->flash('error', 'Failed to archive contact. Please try again.');
+            }
+        } catch (Exception $e) {
+            session()->flash('error', 'Error archiving contact: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Mass archive selected contacts
+     */
+    public function massArchiveContacts(): void
+    {
+        try {
+            // Get the IDs of selected contacts
+            $selectedContactIds = array_keys(array_filter($this->selectedContacts));
+
+            if (empty($selectedContactIds)) {
+                session()->flash('error', 'No contacts selected for archiving.');
+
+                return;
+            }
+
+            $successCount = 0;
+            $errorCount = 0;
+            $alreadyArchivedCount = 0;
+
+            // Get all contacts to check their status
+            $allContacts = $this->contacts();
+
+            // Create a DTO with just the status field set to ARCHIVED
+            $contactDTO = new ContactDTO(
+                contactStatus: 'ARCHIVED'
+            );
+
+            // Archive each selected contact
+            foreach ($selectedContactIds as $contactId) {
+                try {
+                    // Find the contact in the array
+                    $contact = null;
+                    foreach ($allContacts as $c) {
+                        if ($c['ContactID'] === $contactId) {
+                            $contact = $c;
+                            break;
+                        }
+                    }
+
+                    // Skip if the contact is already archived
+                    if ($contact && $contact['ContactStatus'] === 'ARCHIVED') {
+                        $alreadyArchivedCount++;
+
+                        continue;
+                    }
+
+                    $response = Xero::contacts()->update($contactId, $contactDTO->toArray());
+
+                    if (isset($response['Id']) || isset($response['ContactID'])) {
+                        $successCount++;
+                    } else {
+                        $errorCount++;
+                    }
+                } catch (Exception $e) {
+                    $errorCount++;
+                }
+            }
+
+            // Clear the selected contacts array
+            $this->selectedContacts = [];
+
+            // Set the appropriate message
+            if ($successCount > 0 && $errorCount === 0 && $alreadyArchivedCount === 0) {
+                session()->flash('message', $successCount.' contacts archived successfully!');
+            } elseif ($successCount > 0 && $errorCount === 0 && $alreadyArchivedCount > 0) {
+                session()->flash('message', $successCount.' contacts archived successfully! ('.$alreadyArchivedCount.' were already archived)');
+            } elseif ($successCount > 0 && $errorCount > 0) {
+                $message = $successCount.' contacts archived successfully, but '.$errorCount.' failed.';
+                if ($alreadyArchivedCount > 0) {
+                    $message .= ' ('.$alreadyArchivedCount.' were already archived)';
+                }
+                session()->flash('message', $message);
+            } elseif ($alreadyArchivedCount > 0 && $successCount === 0 && $errorCount === 0) {
+                session()->flash('message', 'All selected contacts were already archived.');
+            } else {
+                session()->flash('error', 'Failed to archive any contacts. Please try again.');
+            }
+        } catch (Exception $e) {
+            session()->flash('error', 'Error archiving contacts: '.$e->getMessage());
+        }
+    }
+
+    public function exportToCsv(): ?\Symfony\Component\HttpFoundation\StreamedResponse
     {
         try {
             $allContacts = $this->contacts();
@@ -157,7 +251,7 @@ class Contacts extends Component
             // Check if any contacts are selected
             $hasSelectedContacts = count(array_filter($this->selectedContacts)) > 0;
 
-            // If contacts are selected, filter the contacts array to only include selected ones
+            // If contacts are selected, filter the contact array to only include selected ones
             $contacts = $allContacts;
             if ($hasSelectedContacts) {
                 $contacts = array_filter($allContacts, function ($contact) {
@@ -248,5 +342,29 @@ class Contacts extends Component
 
             return null;
         }
+    }
+
+    /**
+     * Format a Xero date string to a readable date
+     *
+     * @param  string  $xeroDate  The date string from Xero API
+     * @return string Formatted date string
+     */
+    private function formatXeroDate(string $xeroDate): string
+    {
+        $pattern = '/\/Date\((\d+)\+\d+\)\//';
+        $replacement = '@$1';
+        $dateStr = preg_replace($pattern, $replacement, $xeroDate);
+
+        if ($dateStr === null) {
+            return '';
+        }
+
+        $timestamp = strtotime($dateStr);
+        if ($timestamp === false) {
+            return '';
+        }
+
+        return date('Y-m-d H:i:s', $timestamp);
     }
 }

@@ -1,4 +1,7 @@
 <div>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
     <div class="flex items-center justify-between mb-4">
         <h1 class="text-xl font-semibold">{{ __('Contacts') }}</h1>
 
@@ -7,6 +10,16 @@
                 return Object.values($wire.selectedContacts).filter(value => value === true).length;
             }
         }">
+            <x-button
+                x-show="selectedCount > 0"
+                x-cloak
+                wire:click="massArchiveContacts"
+                wire:confirm="{{ __('Are you sure you want to delete the selected contacts? This action cannot be undone.') }}"
+                class="bg-red-600 hover:bg-red-700 text-white"
+            >
+                <span x-text="`{{ __('Archive') }} (${selectedCount})`"></span>
+            </x-button>
+
             <x-button wire:click="exportToCsv">
                 <span x-text="selectedCount > 0 ? `{{ __('Export') }} (${selectedCount}) {{ __('to CSV') }}` : `{{ __('Export to CSV') }}`"></span>
             </x-button>
@@ -201,7 +214,18 @@
                         <td>{{ $row['ContactStatus'] }}</td>
                         <td>
                             <a href="{{ route('xero.contacts.show', $row['ContactID']) }}" class="text-blue-600 hover:text-blue-900 mr-2">View</a>
-                            <a href="{{ route('xero.contacts.edit', $row['ContactID']) }}" class="text-green-600 hover:text-green-900">Edit</a>
+                            <a href="{{ route('xero.contacts.edit', $row['ContactID']) }}" class="text-green-600 hover:text-green-900 mr-2">Edit</a>
+                            @if($row['ContactStatus'] !== 'ARCHIVED')
+                                <button
+                                    wire:click="archiveContact('{{ $row['ContactID'] }}')"
+                                    wire:confirm="{{ __('Are you sure you want to archive this contact?') }}"
+                                    class="text-red-600 hover:text-red-900 bg-transparent border-none p-0 cursor-pointer"
+                                >
+                                    Archive
+                                </button>
+                            @else
+                                <span class="text-gray-400">(Archived)</span>
+                            @endif
                         </td>
                     </tr>
                 @endforeach

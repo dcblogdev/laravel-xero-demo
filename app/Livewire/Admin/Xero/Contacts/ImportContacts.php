@@ -13,22 +13,23 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Log;
 
 #[Title('Import Contacts')]
 class ImportContacts extends Component
 {
     use WithFileUploads;
 
-    public $csvFile;
+    public ?\Livewire\Features\SupportFileUploads\TemporaryUploadedFile $csvFile = null;
 
     public bool $fileUploaded = false;
 
     public bool $mappingRequired = false;
 
-    /** @var array<int, array<string, string>> */
+    /** @var array<int, array<string, string|null>> */
     public array $csvData = [];
 
-    /** @var array<string, string> */
+    /** @var array<int, string> */
     public array $headers = [];
 
     /** @var array<string, string> */
@@ -78,9 +79,24 @@ class ImportContacts extends Component
     {
         $this->validate();
 
+        // Ensure csvFile is not null after validation
+        if (! $this->csvFile) {
+            session()->flash('error', 'No file was uploaded.');
+
+            return;
+        }
+
         try {
             // Store the file temporarily
             $path = $this->csvFile->store('temp');
+            if ($path === false) {
+                throw new Exception('Failed to store uploaded file');
+            }
+
+            // At this point, $path is definitely a string
+            /** @var string $path */
+
+            // Get the full path to the file
             $fullPath = Storage::path($path);
 
             // Parse the CSV file
@@ -98,8 +114,75 @@ class ImportContacts extends Component
             $this->checkIfMappingRequired();
 
         } catch (Exception $e) {
-            session()->flash('error', 'Error uploading CSV: ' . $e->getMessage());
+            session()->flash('error', 'Error uploading CSV: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Update column mapping
+     */
+    public function updateMapping(string $header, string $field): void
+    {
+        if ($field === '') {
+            unset($this->columnMapping[$header]);
+        } else {
+            $this->columnMapping[$header] = $field;
+        }
+
+        // Re-check if mapping is still required
+        $this->checkIfMappingRequired();
+    }
+
+    /**
+     * Import contacts from CSV
+     */
+    public function importContacts(): void
+    {
+        if (! $this->fileUploaded) {
+            session()->flash('error', 'Please upload a CSV file first.');
+
+            return;
+        }
+
+        if ($this->mappingRequired && ! $this->isHeaderMapped('name')) {
+            session()->flash('error', 'Please map the Name field before importing.');
+
+            return;
+        }
+
+        try {
+            // Count the number of contacts to be imported
+            $contactCount = count($this->csvData);
+
+            // Generate a unique job ID
+            $jobId = uniqid('import_', true);
+
+            // Dispatch the job to process the import in the background
+            ImportXeroContactsJob::dispatch($this->csvData, $this->columnMapping, $jobId);
+
+            // Store the job ID in the session
+            session()->put('xero_import_job_id', $jobId);
+
+            // Set success message
+            session()->flash('message', 'Import started! '.$contactCount.' contacts are being processed in the background. You can navigate away from this page.');
+
+            // Reset the component
+            $this->reset(['csvFile', 'fileUploaded', 'mappingRequired', 'csvData', 'headers', 'columnMapping']);
+
+            // Redirect to the contact index
+            $this->redirect(route('xero.contacts.index'));
+
+        } catch (Exception $e) {
+            session()->flash('error', 'Error starting import: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Cancel import and return to contacts index
+     */
+    public function cancel(): void
+    {
+        $this->redirect(route('xero.contacts.index'));
     }
 
     /**
@@ -119,7 +202,9 @@ class ImportContacts extends Component
             throw new Exception('CSV file is empty or invalid');
         }
 
-        $this->headers = array_map('trim', $headers);
+        $this->headers = array_map(function ($value) {
+            return mb_trim((string) $value);
+        }, $headers);
 
         // Get data (limit to first 100 rows for preview)
         $this->csvData = [];
@@ -146,15 +231,15 @@ class ImportContacts extends Component
         $this->columnMapping = [];
 
         foreach ($this->headers as $header) {
-            $headerLower = strtolower($header);
+            $headerLower = mb_strtolower($header);
 
             // Try to find a match in available fields
             foreach ($this->availableFields as $field => $label) {
                 if (
-                    $headerLower === strtolower($field) ||
-                    $headerLower === strtolower($label) ||
-                    $headerLower === str_replace(' ', '', strtolower($label)) ||
-                    $headerLower === str_replace('_', '', strtolower($field))
+                    $headerLower === mb_strtolower($field) ||
+                    $headerLower === mb_strtolower($label) ||
+                    $headerLower === str_replace(' ', '', mb_strtolower($label)) ||
+                    $headerLower === str_replace('_', '', mb_strtolower($field))
                 ) {
                     $this->columnMapping[$header] = $field;
                     break;
@@ -181,27 +266,16 @@ class ImportContacts extends Component
     }
 
     /**
-     * Update column mapping
-     */
-    public function updateMapping(string $header, string $field): void
-    {
-        if ($field === '') {
-            unset($this->columnMapping[$header]);
-        } else {
-            $this->columnMapping[$header] = $field;
-        }
-
-        // Re-check if mapping is still required
-        $this->checkIfMappingRequired();
-    }
-
-    /**
      * Check if a contact already exists in Xero
      *
-     * @param string $name Contact name
-     * @param string|null $email Contact email
-     * @param string|null $accountNumber Contact account number
-     * @return array|null The existing contact or null if not found
+     * @param  string  $name  Contact name
+     * @param  string|null  $email  Contact email
+     * @param  string|null  $accountNumber  Contact account number
+     * @return array<string, mixed>|null The existing contact or null if not found
+     *
+     * @internal This method is used by the ImportXeroContactsJob
+     *
+     * @phpstan-ignore-next-line
      */
     private function findExistingContact(string $name, ?string $email = null, ?string $accountNumber = null): ?array
     {
@@ -209,20 +283,20 @@ class ImportContacts extends Component
             $query = Xero::contacts();
 
             // First try to find by exact name match
-            $query->filter('where', 'Name=="' . addslashes($name) . '"');
+            $query->filter('where', 'Name=="'.addslashes($name).'"');
             $results = $query->get();
 
-            if (!empty($results)) {
+            if (! empty($results)) {
                 return $results[0];
             }
 
             // If not found by name and we have an email, try by email
             if ($email) {
                 $query = Xero::contacts();
-                $query->filter('where', 'EmailAddress=="' . $email . '"');
+                $query->filter('where', 'EmailAddress=="'.$email.'"');
                 $results = $query->get();
 
-                if (!empty($results)) {
+                if (! empty($results)) {
                     return $results[0];
                 }
             }
@@ -230,10 +304,10 @@ class ImportContacts extends Component
             // If not found by email and we have an account number, try by account number
             if ($accountNumber) {
                 $query = Xero::contacts();
-                $query->filter('where', 'AccountNumber=="' . $accountNumber . '"');
+                $query->filter('where', 'AccountNumber=="'.$accountNumber.'"');
                 $results = $query->get();
 
-                if (!empty($results)) {
+                if (! empty($results)) {
                     return $results[0];
                 }
             }
@@ -241,57 +315,20 @@ class ImportContacts extends Component
             return null;
         } catch (Exception $e) {
             // If there's an error, log it but return null to continue with creating a new contact
-            \Log::error('Error finding existing contact: ' . $e->getMessage());
+            Log::error('Error finding existing contact: '.$e->getMessage());
+
             return null;
-        }
-    }
-
-    /**
-     * Import contacts from CSV
-     */
-    public function importContacts(): void
-    {
-        if (!$this->fileUploaded) {
-            session()->flash('error', 'Please upload a CSV file first.');
-            return;
-        }
-
-        if ($this->mappingRequired && !$this->isHeaderMapped('name')) {
-            session()->flash('error', 'Please map the Name field before importing.');
-            return;
-        }
-
-        try {
-            // Count the number of contacts to be imported
-            $contactCount = count($this->csvData);
-
-            // Generate a unique job ID
-            $jobId = uniqid('import_', true);
-
-            // Dispatch the job to process the import in the background
-            ImportXeroContactsJob::dispatch($this->csvData, $this->columnMapping, $jobId);
-
-            // Store the job ID in the session
-            session()->put('xero_import_job_id', $jobId);
-
-            // Set success message
-            session()->flash('message', 'Import started! ' . $contactCount . ' contacts are being processed in the background. You can navigate away from this page.');
-
-            // Reset the component
-            $this->reset(['csvFile', 'fileUploaded', 'mappingRequired', 'csvData', 'headers', 'columnMapping']);
-
-            // Redirect to contacts index
-            $this->redirect(route('xero.contacts.index'));
-
-        } catch (Exception $e) {
-            session()->flash('error', 'Error starting import: ' . $e->getMessage());
         }
     }
 
     /**
      * Map a CSV row to a ContactDTO object
      *
-     * @param array<string, string> $row
+     * @param  array<string, string>  $row
+     *
+     * @internal This method is used by the ImportXeroContactsJob
+     *
+     * @phpstan-ignore-next-line
      */
     private function mapRowToContactDTO(array $row): ContactDTO
     {
@@ -315,11 +352,11 @@ class ImportContacts extends Component
         // Create an addresses array if address fields are present
         $addresses = [];
         if (
-            !empty($mappedData['addressLine1']) ||
-            !empty($mappedData['city']) ||
-            !empty($mappedData['region']) ||
-            !empty($mappedData['postalCode']) ||
-            !empty($mappedData['country'])
+            ! empty($mappedData['addressLine1']) ||
+            ! empty($mappedData['city']) ||
+            ! empty($mappedData['region']) ||
+            ! empty($mappedData['postalCode']) ||
+            ! empty($mappedData['country'])
         ) {
             $addresses[] = ContactDTO::createAddress(
                 'POBOX', // Default address type
@@ -337,9 +374,9 @@ class ImportContacts extends Component
         // Create a phones array if phone fields are present
         $phones = [];
         if (
-            !empty($mappedData['phoneNumber']) ||
-            !empty($mappedData['phoneAreaCode']) ||
-            !empty($mappedData['phoneCountryCode'])
+            ! empty($mappedData['phoneNumber']) ||
+            ! empty($mappedData['phoneAreaCode']) ||
+            ! empty($mappedData['phoneCountryCode'])
         ) {
             $phones[] = ContactDTO::createPhone(
                 'DEFAULT', // Default phone type
@@ -370,15 +407,8 @@ class ImportContacts extends Component
      */
     private function parseBoolean(string $value): bool
     {
-        $value = strtolower(trim($value));
-        return in_array($value, ['yes', 'true', '1', 'y', 'on']);
-    }
+        $value = mb_strtolower(mb_trim($value));
 
-    /**
-     * Cancel import and return to contacts index
-     */
-    public function cancel(): void
-    {
-        $this->redirect(route('xero.contacts.index'));
+        return in_array($value, ['yes', 'true', '1', 'y', 'on']);
     }
 }
