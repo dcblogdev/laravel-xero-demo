@@ -23,10 +23,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Register our custom Xero service to override the vendor's implementation
-        $this->app->singleton('xero', function ($app) {
-            return new \App\Services\Xero;
-        });
+
     }
 
     public function boot(): void
