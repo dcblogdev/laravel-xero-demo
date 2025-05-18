@@ -1,5 +1,29 @@
 <div>
-    <h1>{{ __('Contacts') }}</h1>
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-semibold">{{ __('Contacts') }}</h1>
+
+        <div class="flex space-x-2">
+            <x-button wire:click="exportToCsv">
+                {{ __('Export to CSV') }}
+            </x-button>
+
+            <x-a href="{{ route('xero.contacts.create') }}" class="inline-flex items-center font-medium ease-in-out disabled:opacity-50 disabled:cursor-not-allowed rounded-md cursor-pointer bg-primary text-white hover:bg-primary/90 shadow-md dark:bg-primary-dark dark:text-gray-200 dark:hover:bg-primary-dark/80 px-2 py-1 text-sm">
+                {{ __('Create Contact') }}
+            </x-a>
+        </div>
+    </div>
+
+    @if (session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{ session('error') }}</span>
+        </div>
+    @endif
+
+    @if (session('message'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{ session('message') }}</span>
+        </div>
+    @endif
 
     <div class="card">
 
@@ -8,6 +32,7 @@
             <div class="col-span-2">
                 <x-form.input type="search" id="searchTerm" name="searchTerm" wire:model.live="searchTerm" label="none" :placeholder="__('Search Contacts')" />
             </div>
+
         </div>
 
         <div class="mb-5" x-data="{ isOpen: @if($openFilter) true @else false @endif }">
@@ -72,7 +97,10 @@
                         <td>{{ $row['LastName'] ?? '' }}</td>
                         <td>{{ $row['EmailAddress'] ?? '' }}</td>
                         <td>{{ $row['ContactStatus'] }}</td>
-                        <td><a href="{{ route('xero.contacts.show', $row['ContactID']) }}">View</a></td>
+                        <td>
+                            <a href="{{ route('xero.contacts.show', $row['ContactID']) }}" class="text-blue-600 hover:text-blue-900 mr-2">View</a>
+                            <a href="{{ route('xero.contacts.edit', $row['ContactID']) }}" class="text-green-600 hover:text-green-900">Edit</a>
+                        </td>
                     </tr>
                 @endforeach
                 </tbody>

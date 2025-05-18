@@ -52,6 +52,8 @@ Route::prefix('admin')->middleware(['auth', 'verified', 'activeUser', 'ipCheckMi
 Route::group(['prefix' => 'admin/xero', 'middleware' => ['auth', 'XeroAuthenticated']], function () {
     Route::get('/', App\Livewire\Admin\Xero\XeroDashboard::class)->name('xero.index');
     Route::get('contacts', App\Livewire\Admin\Xero\Contacts\Contacts::class)->name('xero.contacts.index');
+    Route::get('contacts/create', App\Livewire\Admin\Xero\Contacts\CreateContact::class)->name('xero.contacts.create');
+    Route::get('contacts/{contactId}/edit', App\Livewire\Admin\Xero\Contacts\EditContact::class)->name('xero.contacts.edit');
     Route::get('contacts/{contactId}', App\Livewire\Admin\Xero\Contacts\ShowContact::class)->name('xero.contacts.show');
 
     // Route::get('invoices', App\Livewire\Admin\Xero\Invoices\Invoices::class)->name('xero.invoices.index');

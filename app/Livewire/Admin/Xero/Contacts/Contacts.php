@@ -6,6 +6,7 @@ namespace App\Livewire\Admin\Xero\Contacts;
 
 use Dcblogdev\Xero\Facades\Xero;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Response;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -74,5 +75,75 @@ class Contacts extends Component
     public function resetFilters(): void
     {
         $this->reset();
+    }
+
+    public function exportToCsv()
+    {
+        try {
+            $contacts = $this->contacts();
+
+            // Define CSV headers
+            $headers = [
+                'Name',
+                'First Name',
+                'Last Name',
+                'Email',
+                'Account Number',
+                'Status',
+                'Is Customer',
+                'Is Supplier',
+                'Website',
+                'Tax Number',
+                'Updated Date',
+            ];
+
+            // Create a temporary file
+            $filename = 'xero-contacts-' . date('Y-m-d') . '.csv';
+            $tempFile = tmpfile();
+            $tempFilePath = stream_get_meta_data($tempFile)['uri'];
+
+            // Write headers to CSV
+            $file = fopen($tempFilePath, 'w');
+            fputcsv($file, $headers);
+
+            // Write contact data to CSV
+            foreach ($contacts as $contact) {
+                $row = [
+                    $contact['Name'] ?? '',
+                    $contact['FirstName'] ?? '',
+                    $contact['LastName'] ?? '',
+                    $contact['EmailAddress'] ?? '',
+                    $contact['AccountNumber'] ?? '',
+                    $contact['ContactStatus'] ?? '',
+                    isset($contact['IsCustomer']) ? ($contact['IsCustomer'] ? 'Yes' : 'No') : '',
+                    isset($contact['IsSupplier']) ? ($contact['IsSupplier'] ? 'Yes' : 'No') : '',
+                    $contact['Website'] ?? '',
+                    $contact['TaxNumber'] ?? '',
+                    isset($contact['UpdatedDateUTC']) ? date('Y-m-d H:i:s', strtotime(preg_replace('/\/Date\((\d+)\+\d+\)\//', '@$1', $contact['UpdatedDateUTC']))) : '',
+                ];
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+
+            // Read the file content
+            $fileContent = file_get_contents($tempFilePath);
+
+            // Close the temporary file
+            fclose($tempFile);
+
+            // Set success message
+            session()->flash('message', 'Contacts exported successfully!');
+
+            // Return the response
+            return response()->streamDownload(function () use ($fileContent) {
+                echo $fileContent;
+            }, $filename, [
+                'Content-Type' => 'text/csv',
+            ]);
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error exporting contacts: ' . $e->getMessage());
+            return null;
+        }
     }
 }

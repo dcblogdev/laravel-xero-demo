@@ -1,6 +1,21 @@
 <div>
     <div class="bg-white shadow-md rounded p-6 max-w-3xl mx-auto">
-    <h2 class="text-2xl font-semibold mb-4">{{ $contact['Name'] ?? 'Unnamed Contact' }}</h2>
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-semibold">{{ $contact['Name'] ?? 'Unnamed Contact' }}</h2>
+        <div class="space-x-4">
+            <p>
+                <x-a href="{{ route('xero.contacts.edit', $contact['ContactID']) }}">
+                    {{ __('Edit Contact') }}
+                </x-a>
+
+                |
+
+                <x-a href="{{ route('xero.contacts.index') }}">
+                    {{ __('Back to List') }}
+                </x-a>
+            </p>
+        </div>
+    </div>
 
     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
         <div>
@@ -15,12 +30,12 @@
 
         <div>
             <dt class="font-medium text-gray-500">Email</dt>
-            <dd class="text-gray-900">{{ $contact['EmailAddress'] ?: 'N/A' }}</dd>
+            <dd class="text-gray-900">{{ $contact['EmailAddress'] ?? 'N/A' }}</dd>
         </div>
 
         <div>
             <dt class="font-medium text-gray-500">Bank Account</dt>
-            <dd class="text-gray-900">{{ $contact['BankAccountDetails'] ?: 'N/A' }}</dd>
+            <dd class="text-gray-900">{{ $contact['BankAccountDetails'] ?? 'N/A' }}</dd>
         </div>
 
         <div>
@@ -48,10 +63,10 @@
         @foreach ($contact['Addresses'] as $address)
             <div class="bg-gray-50 p-4 rounded border text-sm">
                 <p><strong>Type:</strong> {{ $address['AddressType'] }}</p>
-                <p><strong>City:</strong> {{ $address['City'] ?: 'N/A' }}</p>
-                <p><strong>Region:</strong> {{ $address['Region'] ?: 'N/A' }}</p>
-                <p><strong>Postal Code:</strong> {{ $address['PostalCode'] ?: 'N/A' }}</p>
-                <p><strong>Country:</strong> {{ $address['Country'] ?: 'N/A' }}</p>
+                <p><strong>City:</strong> {{ $address['City'] ?? 'N/A' }}</p>
+                <p><strong>Region:</strong> {{ $address['Region'] ?? 'N/A' }}</p>
+                <p><strong>Postal Code:</strong> {{ $address['PostalCode'] ?? 'N/A' }}</p>
+                <p><strong>Country:</strong> {{ $address['Country'] ?? 'N/A' }}</p>
             </div>
         @endforeach
     </div>
@@ -64,7 +79,11 @@
             <div class="bg-gray-50 p-4 rounded border text-sm">
                 <p><strong>Type:</strong> {{ $phone['PhoneType'] }}</p>
                 <p><strong>Number:</strong>
-                    {{ trim("{$phone['PhoneCountryCode']} {$phone['PhoneAreaCode']} {$phone['PhoneNumber']}") ?: 'N/A' }}
+                    {{ trim(
+                        ($phone['PhoneCountryCode'] ?? '') . ' ' .
+                        ($phone['PhoneAreaCode'] ?? '') . ' ' .
+                        ($phone['PhoneNumber'] ?? '')
+                    ) ?: 'N/A' }}
                 </p>
             </div>
         @endforeach
