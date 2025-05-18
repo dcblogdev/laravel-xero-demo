@@ -1,0 +1,73 @@
+<div>
+    <div class="bg-white shadow-md rounded p-6 max-w-3xl mx-auto">
+    <h2 class="text-2xl font-semibold mb-4">{{ $contact['Name'] ?? 'Unnamed Contact' }}</h2>
+
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+        <div>
+            <dt class="font-medium text-gray-500">Contact ID</dt>
+            <dd class="text-gray-900">{{ $contact['ContactID'] }}</dd>
+        </div>
+
+        <div>
+            <dt class="font-medium text-gray-500">Status</dt>
+            <dd class="text-gray-900">{{ $contact['ContactStatus'] }}</dd>
+        </div>
+
+        <div>
+            <dt class="font-medium text-gray-500">Email</dt>
+            <dd class="text-gray-900">{{ $contact['EmailAddress'] ?: 'N/A' }}</dd>
+        </div>
+
+        <div>
+            <dt class="font-medium text-gray-500">Bank Account</dt>
+            <dd class="text-gray-900">{{ $contact['BankAccountDetails'] ?: 'N/A' }}</dd>
+        </div>
+
+        <div>
+            <dt class="font-medium text-gray-500">Updated</dt>
+            <dd class="text-gray-900">
+                {{ \Carbon\Carbon::parse(preg_replace('/\/Date\((\d+)\+\d+\)\//', '@$1', $contact['UpdatedDateUTC']))->toDayDateTimeString() }}
+            </dd>
+        </div>
+
+        <div>
+            <dt class="font-medium text-gray-500">Is Supplier</dt>
+            <dd class="text-gray-900">{{ $contact['IsSupplier'] ? 'Yes' : 'No' }}</dd>
+        </div>
+
+        <div>
+            <dt class="font-medium text-gray-500">Is Customer</dt>
+            <dd class="text-gray-900">{{ $contact['IsCustomer'] ? 'Yes' : 'No' }}</dd>
+        </div>
+    </dl>
+
+    <hr class="my-6">
+
+    <h3 class="text-lg font-semibold mb-2">Addresses</h3>
+    <div class="space-y-2">
+        @foreach ($contact['Addresses'] as $address)
+            <div class="bg-gray-50 p-4 rounded border text-sm">
+                <p><strong>Type:</strong> {{ $address['AddressType'] }}</p>
+                <p><strong>City:</strong> {{ $address['City'] ?: 'N/A' }}</p>
+                <p><strong>Region:</strong> {{ $address['Region'] ?: 'N/A' }}</p>
+                <p><strong>Postal Code:</strong> {{ $address['PostalCode'] ?: 'N/A' }}</p>
+                <p><strong>Country:</strong> {{ $address['Country'] ?: 'N/A' }}</p>
+            </div>
+        @endforeach
+    </div>
+
+    <hr class="my-6">
+
+    <h3 class="text-lg font-semibold mb-2">Phone Numbers</h3>
+    <div class="space-y-2">
+        @foreach ($contact['Phones'] as $phone)
+            <div class="bg-gray-50 p-4 rounded border text-sm">
+                <p><strong>Type:</strong> {{ $phone['PhoneType'] }}</p>
+                <p><strong>Number:</strong>
+                    {{ trim("{$phone['PhoneCountryCode']} {$phone['PhoneAreaCode']} {$phone['PhoneNumber']}") ?: 'N/A' }}
+                </p>
+            </div>
+        @endforeach
+    </div>
+</div>
+</div>
