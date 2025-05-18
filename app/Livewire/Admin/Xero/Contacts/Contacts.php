@@ -34,7 +34,7 @@ class Contacts extends Component
         return view('livewire.admin.xero.contacts.index');
     }
 
-    /** @return array<int, string> */
+    /** @return array<int, array<string, mixed>> */
     public function contacts(): array
     {
         /*$contacts = Xero::contacts()
@@ -81,6 +81,30 @@ class Contacts extends Component
         $this->reset();
     }
 
+    /**
+     * Format a Xero date string to a readable date
+     *
+     * @param string $xeroDate The date string from Xero API
+     * @return string Formatted date string
+     */
+    private function formatXeroDate(string $xeroDate): string
+    {
+        $pattern = '/\/Date\((\d+)\+\d+\)\//';
+        $replacement = '@$1';
+        $dateStr = preg_replace($pattern, $replacement, $xeroDate);
+
+        if ($dateStr === null) {
+            return '';
+        }
+
+        $timestamp = strtotime($dateStr);
+        if ($timestamp === false) {
+            return '';
+        }
+
+        return date('Y-m-d H:i:s', $timestamp);
+    }
+
     public function selectAllContacts(bool $checked): void
     {
         $contacts = $this->contacts();
@@ -98,6 +122,11 @@ class Contacts extends Component
         }
     }
 
+    /**
+     * Export contacts to a CSV file
+     *
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|null
+     */
     public function exportToCsv()
     {
         try {
@@ -142,10 +171,16 @@ class Contacts extends Component
             // Create a temporary file
             $filename = 'xero-contacts-'.date('Y-m-d').'.csv';
             $tempFile = tmpfile();
+            if ($tempFile === false) {
+                throw new Exception('Failed to create temporary file');
+            }
             $tempFilePath = stream_get_meta_data($tempFile)['uri'];
 
             // Write headers to CSV
             $file = fopen($tempFilePath, 'w');
+            if ($file === false) {
+                throw new Exception('Failed to open file for writing');
+            }
             fputcsv($file, $headers);
 
             // Write contact data to CSV
@@ -161,7 +196,7 @@ class Contacts extends Component
                     isset($contact['IsSupplier']) ? ($contact['IsSupplier'] ? 'Yes' : 'No') : '',
                     $contact['Website'] ?? '',
                     $contact['TaxNumber'] ?? '',
-                    isset($contact['UpdatedDateUTC']) ? date('Y-m-d H:i:s', strtotime(preg_replace('/\/Date\((\d+)\+\d+\)\//', '@$1', $contact['UpdatedDateUTC']))) : '',
+                    isset($contact['UpdatedDateUTC']) && is_string($contact['UpdatedDateUTC']) ? $this->formatXeroDate($contact['UpdatedDateUTC']) : '',
                 ];
                 fputcsv($file, $row);
             }
@@ -170,6 +205,9 @@ class Contacts extends Component
 
             // Read the file content
             $fileContent = file_get_contents($tempFilePath);
+            if ($fileContent === false) {
+                throw new Exception('Failed to read file content');
+            }
 
             // Close the temporary file
             fclose($tempFile);

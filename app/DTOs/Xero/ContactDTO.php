@@ -23,8 +23,11 @@ class ContactDTO
         public ?string $website = null,
         public ?string $purchasesDefaultAccountCode = null,
         public ?string $salesDefaultAccountCode = null,
+        /** @var array<int, array<string, mixed>> */
         public ?array $addresses = [],
+        /** @var array<int, array<string, mixed>> */
         public ?array $phones = [],
+        /** @var array<int, array<string, mixed>> */
         public ?array $contactPersons = [],
         public ?bool $hasAttachments = false,
         public ?bool $hasValidationErrors = false,
@@ -32,6 +35,8 @@ class ContactDTO
 
     /**
      * Create an address array for the contact
+     *
+     * @return array<string, string|null>
      */
     public static function createAddress(
         string $addressType,
@@ -61,6 +66,8 @@ class ContactDTO
 
     /**
      * Create a phone array for the contact
+     *
+     * @return array<string, string|null>
      */
     public static function createPhone(
         string $phoneType,
@@ -78,6 +85,8 @@ class ContactDTO
 
     /**
      * Create a contact person array for the contact
+     *
+     * @return array<string, string|bool|null>
      */
     public static function createContactPerson(
         ?string $firstName = null,
@@ -95,6 +104,8 @@ class ContactDTO
 
     /**
      * Convert the DTO to an array for the Xero API
+     *
+     * @return array<string, mixed>
      */
     public function toArray(): array
     {

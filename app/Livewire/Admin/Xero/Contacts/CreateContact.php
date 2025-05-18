@@ -56,6 +56,7 @@ class CreateContact extends Component
 
     public string $phoneCountryCode = '';
 
+    /** @var array<string, string> */
     protected array $rules = [
         'name' => 'required|string|max:255',
         'firstName' => 'nullable|string|max:255',
@@ -77,6 +78,7 @@ class CreateContact extends Component
         'phoneCountryCode' => 'nullable|string|max:10',
     ];
 
+    /** @var array<string, string> */
     protected array $messages = [
         'name.required' => 'The contact name is required.',
         'emailAddress.email' => 'Please enter a valid email address.',
