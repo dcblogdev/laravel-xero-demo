@@ -15,29 +15,47 @@ use Livewire\Component;
 class EditContact extends Component
 {
     public string $contactId = '';
+
     public string $name = '';
+
     public string $firstName = '';
+
     public string $lastName = '';
+
     public string $emailAddress = '';
+
     public string $accountNumber = '';
+
     public string $bankAccountDetails = '';
+
     public string $taxNumber = '';
+
     public string $website = '';
+
     public bool $isSupplier = false;
+
     public bool $isCustomer = true;
 
     // Address fields
     public string $addressType = 'POBOX';
+
     public string $addressLine1 = '';
+
     public string $city = '';
+
     public string $region = '';
+
     public string $postalCode = '';
+
     public string $country = '';
 
     // Phone fields
     public string $phoneType = 'DEFAULT';
+
     public string $phoneNumber = '';
+
     public string $phoneAreaCode = '';
+
     public string $phoneCountryCode = '';
 
     protected array $rules = [
@@ -87,7 +105,7 @@ class EditContact extends Component
             $this->isCustomer = $contact['IsCustomer'] ?? true;
 
             // Set address information if available
-            if (!empty($contact['Addresses'])) {
+            if (! empty($contact['Addresses'])) {
                 foreach ($contact['Addresses'] as $address) {
                     // Use the first address of each type, prioritizing POBOX, then STREET, then DELIVERY
                     if ($address['AddressType'] === 'POBOX' || empty($this->addressLine1)) {
@@ -106,7 +124,7 @@ class EditContact extends Component
             }
 
             // Set phone information if available
-            if (!empty($contact['Phones'])) {
+            if (! empty($contact['Phones'])) {
                 foreach ($contact['Phones'] as $phone) {
                     // Use the first phone of each type, prioritizing DEFAULT, then MOBILE, then others
                     if ($phone['PhoneType'] === 'DEFAULT' || empty($this->phoneNumber)) {
@@ -122,7 +140,7 @@ class EditContact extends Component
                 }
             }
         } catch (Exception $exception) {
-            session()->flash('error', 'Error loading contact: ' . $exception->getMessage());
+            session()->flash('error', 'Error loading contact: '.$exception->getMessage());
             $this->redirect(route('xero.contacts.index'));
         }
     }
@@ -186,7 +204,7 @@ class EditContact extends Component
                 session()->flash('error', 'Failed to update contact. Please try again.');
             }
         } catch (Exception $e) {
-            session()->flash('error', 'Error: ' . $e->getMessage());
+            session()->flash('error', 'Error: '.$e->getMessage());
         }
     }
 }

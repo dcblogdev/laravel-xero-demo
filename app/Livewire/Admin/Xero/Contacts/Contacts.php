@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Admin\Xero\Contacts;
 
 use Dcblogdev\Xero\Facades\Xero;
+use Exception;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Response;
 use Livewire\Attributes\Title;
@@ -108,7 +109,7 @@ class Contacts extends Component
             // If contacts are selected, filter the contacts array to only include selected ones
             $contacts = $allContacts;
             if ($hasSelectedContacts) {
-                $contacts = array_filter($allContacts, function($contact) {
+                $contacts = array_filter($allContacts, function ($contact) {
                     return isset($this->selectedContacts[$contact['ContactID']]) && $this->selectedContacts[$contact['ContactID']];
                 });
             }
@@ -117,8 +118,8 @@ class Contacts extends Component
             if (empty($contacts)) {
                 $contacts = $allContacts;
                 session()->flash('message', 'No contacts were selected. Exporting all contacts.');
-            } else if ($hasSelectedContacts) {
-                session()->flash('message', count($contacts) . ' selected contacts exported successfully!');
+            } elseif ($hasSelectedContacts) {
+                session()->flash('message', count($contacts).' selected contacts exported successfully!');
             } else {
                 session()->flash('message', 'All contacts exported successfully!');
             }
@@ -139,7 +140,7 @@ class Contacts extends Component
             ];
 
             // Create a temporary file
-            $filename = 'xero-contacts-' . date('Y-m-d') . '.csv';
+            $filename = 'xero-contacts-'.date('Y-m-d').'.csv';
             $tempFile = tmpfile();
             $tempFilePath = stream_get_meta_data($tempFile)['uri'];
 
@@ -182,8 +183,9 @@ class Contacts extends Component
             }, $filename, [
                 'Content-Type' => 'text/csv',
             ]);
-        } catch (\Exception $e) {
-            session()->flash('error', 'Error exporting contacts: ' . $e->getMessage());
+        } catch (Exception $e) {
+            session()->flash('error', 'Error exporting contacts: '.$e->getMessage());
+
             return null;
         }
     }

@@ -6,6 +6,7 @@ namespace App\Livewire\Admin\Xero\Contacts;
 
 use App\DTOs\Xero\ContactDTO;
 use Dcblogdev\Xero\Facades\Xero;
+use Exception;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -14,28 +15,45 @@ use Livewire\Component;
 class CreateContact extends Component
 {
     public string $name = '';
+
     public string $firstName = '';
+
     public string $lastName = '';
+
     public string $emailAddress = '';
+
     public string $accountNumber = '';
+
     public string $bankAccountDetails = '';
+
     public string $taxNumber = '';
+
     public string $website = '';
+
     public bool $isSupplier = false;
+
     public bool $isCustomer = true;
 
     // Address fields
     public string $addressType = 'POBOX';
+
     public string $addressLine1 = '';
+
     public string $city = '';
+
     public string $region = '';
+
     public string $postalCode = '';
+
     public string $country = '';
 
     // Phone fields
     public string $phoneType = 'DEFAULT';
+
     public string $phoneNumber = '';
+
     public string $phoneAreaCode = '';
+
     public string $phoneCountryCode = '';
 
     protected array $rules = [
@@ -123,8 +141,8 @@ class CreateContact extends Component
             } else {
                 session()->flash('error', 'Failed to create contact. Please try again.');
             }
-        } catch (\Exception $e) {
-            session()->flash('error', 'Error: ' . $e->getMessage());
+        } catch (Exception $e) {
+            session()->flash('error', 'Error: '.$e->getMessage());
         }
     }
 }

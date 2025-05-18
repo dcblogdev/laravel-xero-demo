@@ -28,8 +28,7 @@ class ContactDTO
         public ?array $contactPersons = [],
         public ?bool $hasAttachments = false,
         public ?bool $hasValidationErrors = false,
-    ) {
-    }
+    ) {}
 
     /**
      * Create an address array for the contact
