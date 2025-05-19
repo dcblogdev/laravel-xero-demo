@@ -16,16 +16,24 @@ class CreateInvoice extends Component
 {
     // Basic invoice fields
     public string $type = 'ACCREC'; // ACCREC for sales invoices, ACCPAY for bills
+
     public string $invoiceNumber = '';
+
     public string $reference = '';
+
     public string $date = '';
+
     public string $dueDate = '';
+
     public string $status = 'DRAFT';
+
     public string $lineAmountTypes = 'Exclusive'; // Exclusive, Inclusive, NoTax
+
     public string $currencyCode = '';
 
     // Contact fields
     public string $contactId = '';
+
     public string $contactName = '';
 
     /** @var array<int, array<string, mixed>> */
@@ -110,6 +118,12 @@ class CreateInvoice extends Component
         }
     }
 
+    /**
+     * Search for contacts in Xero
+     *
+     * @param  string  $search  The search term
+     * @return array<int, array<string, mixed>> The list of contacts matching the search term
+     */
     public function searchContacts(string $search = ''): array
     {
         if (empty($search)) {
@@ -127,28 +141,6 @@ class CreateInvoice extends Component
         }
     }
 
-    /**
-     * Format a date string from YYYY-MM-DD to the format expected by Xero API (/Date(timestamp)/)
-     *
-     * @param string $date The date string in YYYY-MM-DD format
-     * @return string Formatted date string for Xero API
-     */
-    private function formatDateForXero(string $date): string
-    {
-        if (empty($date)) {
-            return '';
-        }
-
-        $timestamp = strtotime($date);
-        if ($timestamp === false) {
-            return '';
-        }
-
-        // Convert to milliseconds and format as /Date(timestamp)/
-        $milliseconds = $timestamp * 1000;
-        return '/Date(' . $milliseconds . '+0000)/';
-    }
-
     public function save(): void
     {
         $this->validate();
@@ -160,7 +152,7 @@ class CreateInvoice extends Component
                 $item['description'],
                 $item['quantity'],
                 $item['unitAmount'],
-                $item['accountCode'],
+                (int) $item['accountCode'],
                 null, // itemCode
                 $item['taxType']
             );
@@ -170,8 +162,8 @@ class CreateInvoice extends Component
             type: $this->type,
             invoiceNumber: $this->invoiceNumber ?: null,
             reference: $this->reference ?: null,
-            date: $this->formatDateForXero($this->date),
-            dueDate: $this->formatDateForXero($this->dueDate),
+            date: Xero::formatDate($this->date, 'Y-m-d'),
+            dueDate: Xero::formatDate($this->dueDate, 'Y-m-d'),
             status: $this->status,
             lineAmountTypes: $this->lineAmountTypes,
             currencyCode: $this->currencyCode ?: null,
@@ -179,17 +171,14 @@ class CreateInvoice extends Component
             lineItems: $formattedLineItems
         );
 
-        try {
-            $response = Xero::invoices()->store($invoiceDTO->toArray());
+        $response = Xero::invoices()->store($invoiceDTO->toArray());
 
-            if (isset($response['Id']) || isset($response['InvoiceID'])) {
-                session()->flash('message', 'Invoice created successfully!');
-                $this->redirect(route('xero.invoices.index'));
-            } else {
-                session()->flash('error', 'Failed to create invoice. Please try again.');
-            }
-        } catch (Exception $e) {
-            session()->flash('error', 'Error: '.$e->getMessage());
+        if (isset($response['Id']) || isset($response['InvoiceID'])) {
+            session()->flash('message', 'Invoice created successfully!');
+            $this->redirect(route('xero.invoices.index'));
+        } else {
+            session()->flash('error', 'Failed to create invoice. Please try again.');
         }
+
     }
 }

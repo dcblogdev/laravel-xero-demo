@@ -21,6 +21,7 @@ class InvoiceDTO
         public ?string $totalTax = null,
         public ?string $total = null,
         public ?string $contactID = null,
+        /** @var array<int, array<string, mixed>> */
         public ?array $contact = null,
         /** @var array<int, array<string, mixed>> */
         public ?array $lineItems = [],
@@ -40,19 +41,20 @@ class InvoiceDTO
     /**
      * Create a line item array for the invoice
      *
+     * @param  array<int, array<string, mixed>>|null  $tracking
      * @return array<string, mixed>
      */
     public static function createLineItem(
-        ?string         $description = null,
+        ?string $description = null,
         string|int|null $quantity = null,
-        string|float|null         $unitAmount = null,
-        ?string         $accountCode = null,
-        ?string         $itemCode = null,
-        ?string         $taxType = null,
-        ?string         $taxAmount = null,
-        ?string         $lineAmount = null,
-        ?string         $discountRate = null,
-        ?array          $tracking = null
+        string|float|null $unitAmount = null,
+        ?int $accountCode = null,
+        ?string $itemCode = null,
+        ?string $taxType = null,
+        ?string $taxAmount = null,
+        ?string $lineAmount = null,
+        ?string $discountRate = null,
+        ?array $tracking = null,
     ): array {
         return array_filter([
             'Description' => $description,

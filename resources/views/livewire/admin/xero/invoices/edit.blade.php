@@ -42,8 +42,7 @@
                 </div>
 
                 <div>
-                    <x-form.input
-                        type="date"
+                    <x-form.date
                         id="date"
                         name="date"
                         wire:model="date"
@@ -53,8 +52,7 @@
                 </div>
 
                 <div>
-                    <x-form.input
-                        type="date"
+                    <x-form.date
                         id="dueDate"
                         name="dueDate"
                         wire:model="dueDate"

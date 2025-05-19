@@ -51,21 +51,21 @@
             <div>
                 <dt class="font-medium text-gray-500 dark:text-gray-200">Date</dt>
                 <dd class="text-gray-900 dark:text-gray-200">
-                    {{ isset($invoice['Date']) ? $this->formatXeroDate($invoice['Date']) : 'N/A' }}
+                    {{ isset($invoice['Date']) ? $this->formatNetJsonDate($invoice['Date']) : 'N/A' }}
                 </dd>
             </div>
 
             <div>
                 <dt class="font-medium text-gray-500 dark:text-gray-200">Due Date</dt>
                 <dd class="text-gray-900 dark:text-gray-200">
-                    {{ isset($invoice['DueDate']) ? $this->formatXeroDate($invoice['DueDate']) : 'N/A' }}
+                    {{ isset($invoice['DueDate']) ? $this->formatNetJsonDate($invoice['DueDate']) : 'N/A' }}
                 </dd>
             </div>
 
             <div>
                 <dt class="font-medium text-gray-500 dark:text-gray-200">Updated</dt>
                 <dd class="text-gray-900 dark:text-gray-200">
-                    {{ isset($invoice['UpdatedDateUTC']) ? $this->formatXeroDate($invoice['UpdatedDateUTC']) : 'N/A' }}
+                    {{ isset($invoice['UpdatedDateUTC']) ? $this->formatNetJsonDate($invoice['UpdatedDateUTC']) : 'N/A' }}
                 </dd>
             </div>
 

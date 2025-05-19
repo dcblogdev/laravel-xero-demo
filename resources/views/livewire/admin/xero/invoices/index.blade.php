@@ -119,8 +119,8 @@
                         </td>
                         <td>{{ $row['InvoiceNumber'] ?? '' }}</td>
                         <td>{{ $row['Reference'] ?? '' }}</td>
-                        <td>{{ isset($row['Date']) ? $this->formatXeroDate($row['Date']) : '' }}</td>
-                        <td>{{ isset($row['DueDate']) ? $this->formatXeroDate($row['DueDate']) : '' }}</td>
+                        <td>{{ isset($row['Date']) ? Xero::formatDate($row['Date'], 'jS M Y') : '' }}</td>
+                        <td>{{ isset($row['DueDate']) ? Xero::formatDate($row['DueDate'], 'jS M Y') : '' }}</td>
                         <td>{{ $row['Contact']['Name'] ?? '' }}</td>
                         <td>{{ $row['Status'] }}</td>
                         <td>{{ $row['Total'] }} {{ $row['CurrencyCode'] ?? '' }}</td>

@@ -18,16 +18,24 @@ class EditInvoice extends Component
 
     // Basic invoice fields
     public string $type = 'ACCREC'; // ACCREC for sales invoices, ACCPAY for bills
+
     public string $invoiceNumber = '';
+
     public string $reference = '';
+
     public string $date = '';
+
     public string $dueDate = '';
+
     public string $status = 'DRAFT';
+
     public string $lineAmountTypes = 'Exclusive'; // Exclusive, Inclusive, NoTax
+
     public string $currencyCode = '';
 
     // Contact fields
     public string $contactId = '';
+
     public string $contactName = '';
 
     /** @var array<int, array<string, mixed>> */
@@ -89,8 +97,8 @@ class EditInvoice extends Component
             $this->type = $invoice['Type'] ?? 'ACCREC';
             $this->invoiceNumber = $invoice['InvoiceNumber'] ?? '';
             $this->reference = $invoice['Reference'] ?? '';
-            $this->date = isset($invoice['Date']) ? $this->formatXeroDateForInput($invoice['Date']) : '';
-            $this->dueDate = isset($invoice['DueDate']) ? $this->formatXeroDateForInput($invoice['DueDate']) : '';
+            $this->date = isset($invoice['Date']) ? Xero::formatDate($invoice['Date'], 'd-m-Y') : '';
+            $this->dueDate = isset($invoice['DueDate']) ? Xero::formatDate($invoice['DueDate'], 'd-m-Y') : '';
             $this->status = $invoice['Status'] ?? 'DRAFT';
             $this->lineAmountTypes = $invoice['LineAmountTypes'] ?? 'Exclusive';
             $this->currencyCode = $invoice['CurrencyCode'] ?? '';
@@ -148,6 +156,12 @@ class EditInvoice extends Component
         }
     }
 
+    /**
+     * Search for contacts in Xero
+     *
+     * @param  string  $search  The search term
+     * @return array<int, array<string, mixed>> The list of contacts matching the search term
+     */
     public function searchContacts(string $search = ''): array
     {
         if (empty($search)) {
@@ -176,7 +190,7 @@ class EditInvoice extends Component
                 $item['description'],
                 $item['quantity'],
                 $item['unitAmount'],
-                $item['accountCode'],
+                (int) $item['accountCode'],
                 null, // itemCode
                 $item['taxType']
             );
@@ -187,16 +201,14 @@ class EditInvoice extends Component
             type: $this->type,
             invoiceNumber: $this->invoiceNumber ?: null,
             reference: $this->reference ?: null,
-            date: $this->date,
-            dueDate: $this->dueDate,
+            date: Xero::formatDate($this->date, 'Y-m-d'),
+            dueDate: Xero::formatDate($this->dueDate, 'Y-m-d'),
             status: $this->status,
             lineAmountTypes: $this->lineAmountTypes,
             currencyCode: $this->currencyCode ?: null,
             contactID: $this->contactId,
             lineItems: $formattedLineItems
         );
-
-        //dd($invoiceDTO->toArray());
 
         $response = Xero::invoices()->update($this->invoiceId, $invoiceDTO->toArray());
 
@@ -207,29 +219,5 @@ class EditInvoice extends Component
             session()->flash('error', 'Failed to update invoice. Please try again.');
         }
 
-    }
-
-    /**
-     * Format a Xero date string to a format suitable for input fields (YYYY-MM-DD)
-     *
-     * @param string $xeroDate The date string from Xero API
-     * @return string Formatted date string
-     */
-    private function formatXeroDateForInput(string $xeroDate): string
-    {
-        $pattern = '/\/Date\((\d+)\+\d+\)\//';
-        $replacement = '@$1';
-        $dateStr = preg_replace($pattern, $replacement, $xeroDate);
-
-        if ($dateStr === null) {
-            return '';
-        }
-
-        $timestamp = strtotime($dateStr);
-        if ($timestamp === false) {
-            return '';
-        }
-
-        return date('Y-m-d', $timestamp);
     }
 }

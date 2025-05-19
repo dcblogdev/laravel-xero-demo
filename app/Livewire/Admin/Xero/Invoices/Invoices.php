@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin\Xero\Invoices;
 
-use App\DTOs\Xero\InvoiceDTO;
 use Dcblogdev\Xero\Facades\Xero;
 use Exception;
 use Illuminate\Contracts\View\View;
@@ -101,8 +100,6 @@ class Invoices extends Component
 
     /**
      * Export invoices to CSV
-     *
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|null
      */
     public function exportToCsv(): ?\Symfony\Component\HttpFoundation\StreamedResponse
     {
@@ -166,8 +163,8 @@ class Invoices extends Component
                 $row = [
                     $invoice['InvoiceNumber'] ?? '',
                     $invoice['Reference'] ?? '',
-                    isset($invoice['Date']) ? $this->formatXeroDate($invoice['Date']) : '',
-                    isset($invoice['DueDate']) ? $this->formatXeroDate($invoice['DueDate']) : '',
+                    isset($invoice['Date']) ? Xero::formatDate($invoice['Date'], 'd/m/Y') : '',
+                    isset($invoice['DueDate']) ? Xero::formatDate($invoice['DueDate'], 'd/m/Y') : '',
                     $invoice['Status'] ?? '',
                     $invoice['Contact']['Name'] ?? '',
                     $invoice['Type'] ?? '',
@@ -175,7 +172,7 @@ class Invoices extends Component
                     $invoice['TotalTax'] ?? '',
                     $invoice['Total'] ?? '',
                     $invoice['CurrencyCode'] ?? '',
-                    isset($invoice['UpdatedDateUTC']) && is_string($invoice['UpdatedDateUTC']) ? $this->formatXeroDate($invoice['UpdatedDateUTC']) : '',
+                    isset($invoice['UpdatedDateUTC']) && is_string($invoice['UpdatedDateUTC']) ? Xero::formatDate($invoice['UpdatedDateUTC']) : '',
                 ];
                 fputcsv($file, $row);
             }
@@ -205,29 +202,5 @@ class Invoices extends Component
 
             return null;
         }
-    }
-
-    /**
-     * Format a Xero date string to a readable date
-     *
-     * @param string $xeroDate The date string from Xero API
-     * @return string Formatted date string
-     */
-    private function formatXeroDate(string $xeroDate): string
-    {
-        $pattern = '/\/Date\((\d+)\+\d+\)\//';
-        $replacement = '@$1';
-        $dateStr = preg_replace($pattern, $replacement, $xeroDate);
-
-        if ($dateStr === null) {
-            return '';
-        }
-
-        $timestamp = strtotime($dateStr);
-        if ($timestamp === false) {
-            return '';
-        }
-
-        return date('Y-m-d H:i:s', $timestamp);
     }
 }
