@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin\Xero\Contacts;
 
-use App\DTOs\Xero\ContactDTO;
+use Dcblogdev\Xero\DTOs\ContactDTO;
 use App\Jobs\ImportXeroContactsJob;
 use Dcblogdev\Xero\Facades\Xero;
 use Exception;

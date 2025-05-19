@@ -7,7 +7,6 @@ namespace App\Livewire\Admin\Xero\Invoices;
 use Dcblogdev\Xero\Facades\Xero;
 use Exception;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\Response;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 

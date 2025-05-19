@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin\Xero\Invoices;
 
-use App\DTOs\Xero\InvoiceDTO;
+use Dcblogdev\Xero\DTOs\InvoiceDTO;
 use Dcblogdev\Xero\Facades\Xero;
 use Exception;
 use Illuminate\Contracts\View\View;
